@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# create logging socket links
+#
+while IFS= read -r user || [[ -n "$user" ]]; do
+  IFS=':' read -ra args <<< "$user"
+  mkdir "/home/${args[0]}/dev"
+  ln /home/.sharedlogsocket "/home/${args[0]}/dev/log"
+done < "/var/run/sftp/users.conf"
+
+# fire up sshd
+#
+/usr/sbin/sshd
+
+# wait for log file to exist...
+while [ ! -f /var/log/auth.log ] ; do sleep 0.1; done
+
+# ...then, tail it to STDOUT
+tail -f /var/log/auth.log

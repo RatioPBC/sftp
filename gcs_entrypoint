@@ -1,0 +1,26 @@
+#!/bin/bash
+set -Eeo pipefail
+
+# shellcheck disable=2154
+trap 's=$?; echo "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s' ERR
+
+# write ssh host keys
+if [ -n "${SSH_HOST_ED25519_KEY}" ]; then
+  echo writing /etc/ssh/ssh_host_ed25519_key...
+  echo ${SSH_HOST_ED25519_KEY} | base64 -d > /etc/ssh/ssh_host_ed25519_key
+  chmod 600 /etc/ssh/ssh_host_ed25519_key
+else
+  echo SSH_HOST_ED25519_KEY not found!
+  exit 1
+fi
+
+if [ -n "${SSH_HOST_RSA_KEY}" ]; then
+  echo writing /etc/ssh/ssh_host_rsa_key...
+  echo ${SSH_HOST_RSA_KEY} | base64 -d > /etc/ssh/ssh_host_rsa_key
+  chmod 600 /etc/ssh/ssh_host_rsa_key
+else
+  echo SSH_HOST_RSA_KEY not found!
+  exit 1
+fi
+
+exec /entrypoint $@
