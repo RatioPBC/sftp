@@ -37,11 +37,21 @@ RUN sed -i -e 's/module(load="imklog")/#module(load="imklog")/' /etc/rsyslog.con
 
 # ---
 
-FROM rsyslog
+FROM golang:1.19 AS build
+
+COPY gcs_get_secret /var/tmp
+RUN cd /var/tmp && go build
+
+# ---
+
+FROM rsyslog AS sftp
+
+COPY --from=build /var/tmp/gcs_get_secret /usr/local/bin/
 
 # update /etc/ssh/sshd_config
 #
-RUN sed -i -e 's/internal-sftp/internal-sftp -l INFO/' /etc/ssh/sshd_config
+RUN sed -i -e 's/internal-sftp/internal-sftp -l INFO/' /etc/ssh/sshd_config && \
+    echo "Port 2222" >> /etc/ssh/sshd_config
 
 # copy gcs_entrypoint (execs original entrypoint)
 #

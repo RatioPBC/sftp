@@ -1,10 +1,15 @@
 #!/bin/bash
-set -Eeo pipefail
 
-# shellcheck disable=2154
-trap 's=$?; echo "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s' ERR
+set -eo pipefail
+
+# get secret values
+#
+export SSH_HOST_ED25519_KEY=$(/usr/local/bin/gcs_get_secret --p ${GCS_PROJECT} -s SFTP_SSH_HOST_ED25519_KEY)
+export SSH_HOST_RSA_KEY=$(/usr/local/bin/gcs_get_secret --p ${GCS_PROJECT} -s SFTP_SSH_HOST_RSA_KEY)
+export SFTP_USERS=$(/usr/local/bin/gcs_get_secret --p ${GCS_PROJECT} -s SFTP_USERS)
 
 # write ssh host keys
+#
 if [ -n "${SSH_HOST_ED25519_KEY}" ]; then
   echo writing /etc/ssh/ssh_host_ed25519_key...
   echo ${SSH_HOST_ED25519_KEY} | base64 -d > /etc/ssh/ssh_host_ed25519_key
@@ -23,4 +28,10 @@ else
   exit 1
 fi
 
+# clean stale socket
+#
+rm -f /home/.sharedlogsocket
+
+# run upstream entrypoint
+#
 exec /entrypoint $@
